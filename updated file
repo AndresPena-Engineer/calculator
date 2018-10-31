@@ -1,0 +1,173 @@
+
+// 10.30.2018
+// Lab 3
+// calculator program
+
+// All the import libraries for the calulator.
+import java.math.*;
+import java.util.*;
+
+// declaring the main class.
+public class calculator {
+    ArrayList<String> contents;
+    String item;
+    calculator check;
+
+// declaring the main method.
+    public static void main (String[] args){
+        Scanner input = new Scanner(System.in);
+        System.out.println("Enter an expression: ");
+        String a = input.nextLine();
+        calculator go = new calculator();
+        a = go.brackets(a);
+        System.out.println("Expression total: "+a);
+    }
+    
+    // This part will be take care of the operation of the braces.
+    public String brackets(String s){             
+        check = new calculator();
+        
+        //while loop to be able to take care of the closing and opening braces.
+        while(s.contains(Character.toString('('))||s.contains(Character.toString(')'))){
+            for(int counter=0; counter<s.length();counter++){
+                try{  
+                
+                   //if there is no sign, between seperate brackets, or number and bracket, it should 
+                   // treat it as a multiplication.
+                    if((s.charAt(counter)==')' || Character.isDigit(s.charAt(counter))) 
+                            && s.charAt(counter+1)=='('){                        
+                        s=s.substring(0,counter+1)+"*"+(s.substring(counter+1));        
+                    }                                                      
+                }catch (Exception ignored){}
+                
+                //search for a closing bracket and ignore if its out of range.
+                if(s.charAt(counter)==')'){                                  
+                    for(int i=counter; i>=0;i--){
+                    
+                        //search for a opening bracket
+                        if(s.charAt(i)=='('){                          
+                            String in = s.substring(i+1,counter);
+                            in = check.recognize(in);
+                            s=s.substring(0,i)+in+s.substring(counter+1);
+                            i=counter=0;
+                        }
+                    }
+                }
+            }
+            
+            //in case it doesnt contain a closing brace it should be able to throw an
+            // exception.
+            // Error handling.
+            if(s.contains(Character.toString('('))||s.contains(Character.toString(')'))||
+                    s.contains(Character.toString('('))||s.contains(Character.toString(')'))){
+                System.out.println("You forgot to put the correct brace placement");
+                return "You forgot to put the correct brace placement";
+            }
+        }
+        s=check.recognize(s);
+        return s;
+    }
+    
+    // I have made this method to divide it into a string 
+    // so that the numbers and operators are treated
+    public String recognize(String s){              
+        PutIt putIt = new PutIt();
+        
+        // holds the numbers and operators on the array list
+        contents = new ArrayList<String>();         
+        item = "";
+        
+        // after the input is scanned, it will scan from left to right, 
+        // all the strings are added to a list, once it finds an operator. 
+        for(int i=s.length()-1;i>=0;i--){           
+            if(Character.isDigit(s.charAt(i))){     
+                item=s.charAt(i)+item;              
+                if(i==0){
+                    putIt.put();
+                }
+            }else{
+                if(s.charAt(i)=='.'){
+                    item=s.charAt(i)+item;
+                    
+                    // this will recognize negative numbers
+                }else if(s.charAt(i)=='-' && (i==0 || (!Character.isDigit(s.charAt(i-1))))){
+                    item=s.charAt(i)+item;         
+                    putIt.put();               
+                }else{
+                
+                    // if its added already, it should form a number and and operator
+                    // as separate strings of list, it adds an empty list before the "|"
+                    // this is to avoid removing something important. 
+                    putIt.put();             
+                    item+=s.charAt(i);         
+                    putIt.put();              
+                if(s.charAt(i)=='|'){     
+                        item+=" ";          
+                        putIt.put();        
+                    }
+                }
+            }
+        }
+        
+        // this part will only check for the operators that are asked in the lab
+        // like the multiplication, addidtion, subtraction, division, power, and also an or.
+        contents = putIt.result(contents, "^", "|");    
+        contents = putIt.result(contents, "*", "/");    
+        contents = putIt.result(contents, "+", "-");    
+        return contents.get(0);
+    }
+    public class PutIt{
+        public void put(){
+            if(!item.equals("")){
+                contents.add(0,item);
+                item="";
+            }
+        }
+        
+        //in case the result is a decimal lower or higher than 0, I want the claculator to be able to know
+        // and be able to give the correct result for all of the operations. 
+        public ArrayList<String>result(ArrayList<String> arrayList, String op1, String op2){
+        
+           //controls BigDecimal decimal point accuracy.
+            int scale = 10;                              
+            BigDecimal result = new BigDecimal(0);
+            for(int c = 0; c<arrayList.size();c++){
+                if(arrayList.get(c).equals(op1)|| arrayList.get(c).equals(op2)){
+                    if(arrayList.get(c).equals("^")){
+                        result = new BigDecimal(arrayList.get(c-1)).pow(Integer.parseInt(arrayList.get(c+1)));
+                    }else if(arrayList.get(c).equals("|")){
+                        result = new BigDecimal(Math.sqrt(Double.parseDouble(arrayList.get(c+1))));
+                    }else if(arrayList.get(c).equals("*")){
+                        result = new BigDecimal(arrayList.get(c-1)).multiply
+                                (new BigDecimal(arrayList.get(c+1)));
+                    }else if(arrayList.get(c).equals("/")){
+                        result = new BigDecimal(arrayList.get(c-1)).divide
+                                (new BigDecimal(arrayList.get(c+1)),scale,BigDecimal.ROUND_DOWN);
+                    }else if(arrayList.get(c).equals("+")){
+                        result = new BigDecimal(arrayList.get(c-1)).add(new BigDecimal(arrayList.get(c+1)));
+                    }else if(arrayList.get(c).equals("-")){
+                        result = new BigDecimal(arrayList.get(c-1)).subtract(new BigDecimal(arrayList.get(c+1)));
+                    }
+                    try{       
+                    
+                    //in a case of a round exeption it should be able to give a rounded result.
+                        arrayList.set(c, (result.setScale(scale, RoundingMode.HALF_DOWN).
+                                stripTrailingZeros().toPlainString()));
+                       
+                       //it will replace the operators that have been used.         
+                        arrayList.remove(c + 1);
+                        
+                        //and remove used numbers from list.            
+                        arrayList.remove(c-1);              
+                    }catch (Exception ignored){}
+                }else{
+                    continue;            
+                }
+                
+                 //loop resets, as arrayList changes size to 0.
+                c=0;                    
+            }
+            return arrayList;
+        }
+    }
+}
