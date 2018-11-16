@@ -1,5 +1,5 @@
 # calculator
-Simple calculator
+Simple calculator that will do addition, subtraction, multiplication, divition, and powers.
 
 # What the calcularor can do:
 
